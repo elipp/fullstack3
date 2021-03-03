@@ -1,31 +1,10 @@
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
+const Person = require('./models/person')
 const app = express()
 
-let notes = [
-	{ 
-		id: 0,
-		name: "Arto Hellas",
-		number: "040 204021"
-	},
-	{ 
-		id: 1,
-		name: "Arto Jaahas",
-		number: "040 30153531"
-	},
-	{ 
-		id: 2,
-		name: "Esko Juupas",
-		number: "040 3311133"
-	},
-	{
-		id: 3,
-		name: "Rauni Kaspia",
-		number: "050 3213131"
-	}
-
-]
+let persons = []
 
 app.use(express.json())
 morgan.token('body', (req, res) => JSON.stringify(req.body));
@@ -35,29 +14,45 @@ app.use(cors())
 
 app.use(express.static('build'))
 
+function addPerson(newperson) {
+	const person = new Person(newperson)
+		person.save().then(response => {
+		console.log(`added person ${person.name} with number ${person.number} to phonebook`)
+	}).catch(e=>{console.log(e)})
+}
+
+function deletePerson(id) {
+
+}
+
+function modifyPerson(id) {
+
+}
+
 app.get('/', (req, res) => {
 	  res.send('<h1>Hello World!</h1>')
 })
 
 app.get('/info', (req,res) => {
-	res.send(`<div><p>Phonebook has info for ${notes.length} people</p><p>${new Date(Date.now()).toLocaleString()}</p></div>`)
+	res.send(`<div><p>Phonebook has info for ${persons.length} people</p><p>${new Date(Date.now()).toLocaleString()}</p></div>`)
 })
 
 app.get('/api/persons', (req, res) => {
-	  res.json(notes)
+	Person.find({}).then(p => {
+	  res.json(p)
+	})
 })
 
-app.get('/api/persons/:id', (request, response) => {
-	const id = Number(request.params.id)
-	const note = notes.find(note => { 
-		return note.id === id 
+app.get('/api/persons/:id', (req, resp) => {
+	const id = Number(req.params.id)
+	Person.find({id: id}).then(p => {
+		if (p) {
+			resp.json(p[0])
+		}
+		else {
+			resp.status(404).end()
+		}
 	})
-	if (note) {
-		response.json(note)
-	}
-	else {
-		response.status(404).end()
-	}
 
 })
 
@@ -71,32 +66,40 @@ app.post('/api/persons', (req,resp) => {
 //		return resp.status(400).json({error:'content missing'})
 //	}
 
-	const newnote = req.body
-	console.log(newnote)
+	const newperson = req.body
 
-	if (!newnote) {
+	if (!newperson) {
 		return resp.status(404).end()
 	}
 	else {
-		if (!newnote.name || !newnote.number) {
+		if (!newperson.name || !newperson.number) {
 			return resp.status(400).json({error: 'name or number missing'})
 		}
-		if (notes.find(n => {return n.name == newnote.name })) {
+		if (persons.find(n => {return n.name == newperson.name })) {
 			return resp.status(400).json({error: 'name already in phonebook'})
 		}
-		newnote.id = randint(2**16)
-		notes = notes.concat(newnote)
-		resp.json(newnote)
-		console.log(`added new note with name ${newnote.name}, id: ${newnote.id}`)
+		newperson.id = randint(2**16)
+		persons = persons.concat(newperson)
+		console.log(`trying to add new person with name ${newperson.name}, id: ${newperson.id}`)
+
+		addPerson(newperson)
+		resp.json(newperson)
+
 	}
 })
 
 app.delete('/api/persons/:id', (request, response) => {
 	  const id = Number(request.params.id)
-	  notes = notes.filter(note => note.id !== id)
-
-	  response.status(204).end()
+	  Person.findByIdAndDelete(request.params.id).then(result => {
+		  persons = persons.filter(p => p.id !== id)
+		  response.status(204).end()
+	  }).catch(e => console.log(e))
 })
+
+app.put('/api/notes/:id', (req, resp, next) => {
+	
+})
+
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
