@@ -1,6 +1,9 @@
 const mongoose = require('mongoose')
 
-const password = process.argv[process.argv.length-1] || "NOPASSWORD"
+const password = process.env.MONGODB_PASS//process.argv[process.argv.length-1] || "NOPASSWORD"
+if (!password) {
+	console.log("No MONGODB_PASS envvar set! Errors inbound.")
+}
 
 const url =`mongodb+srv://mongouser:${password}@cluster0.prh5k.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`
 
