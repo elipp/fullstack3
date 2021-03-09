@@ -85,6 +85,9 @@ app.delete('/api/persons/:id', (req, resp, next) => {
 })
 
 app.put('/api/persons/:id', (req, resp, next) => {
+	if (req.body && req.body.number.length <= 8) {
+		return resp.status(400).json({error: "number needs to be >= 8 digits!"})
+	}
 	Person.findByIdAndUpdate(req.params.id, req.body).then(toupdate => {
 		console.log(`updated person ${toupdate.name}'s number!`)
 		resp.json(req.body)
