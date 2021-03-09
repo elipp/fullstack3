@@ -14,7 +14,6 @@ app.use(cors())
 
 app.use(express.static('build'))
 
-
 app.get('/', (req, res) => {
 	  res.send('<h1>Hello World!</h1>')
 })
@@ -49,9 +48,9 @@ function randint(max) {
 
 app.post('/api/persons', (req,resp,next) => {
 
-//	if (!req.body.content) {
-//		return resp.status(400).json({error:'content missing'})
-//	}
+	if (!req.body.name || !req.body.number) {
+		return resp.status(400).json({error:'missing name or number field!'})
+	}
 
 	const newperson = req.body
 
@@ -69,13 +68,12 @@ app.post('/api/persons', (req,resp,next) => {
 		console.log(`trying to add new person with name ${newperson.name} and number ${newperson.number}`)
 
 		const person = new Person(newperson)
-			person.save().then(resp => {
-			console.log(`added person ${person.name} with number ${person.number} to phonebook`)
+			person.save()
+			.then( p => {
+			console.log(`added person ${p.name} with number ${p.number} to phonebook`)
 			persons = persons.concat(newperson)
+			resp.json(p)
 		}).catch(error => next(error))
-
-		resp.json(newperson)
-
 	}
 })
 
@@ -86,10 +84,10 @@ app.delete('/api/persons/:id', (req, resp, next) => {
 	  }).catch(error => next(error))
 })
 
-app.put('/api/notes/:id', (req, resp, next) => {
-	Person.findById(req.params.id).then(toupdate => {
-		//toupdate.number = req.para
-		console.log(toupdate)
+app.put('/api/persons/:id', (req, resp, next) => {
+	Person.findByIdAndUpdate(req.params.id, req.body).then(toupdate => {
+		console.log(`updated person ${toupdate.name}'s number!`)
+		resp.json(req.body)
 	}).catch(error=>next(error))
 })
 
@@ -98,6 +96,9 @@ const errorHandler = (error, req, resp, next) => {
 
 	if (error.name === 'CastError') {
 		return resp.status(400).send({ error: 'malformatted id' })
+	}
+	else if (error.name == 'ValidationError') {
+		return resp.status(400).json({error: error.message})
 	}
 
 	next(error)
